@@ -1,5 +1,5 @@
 name: iot_remote_controller
-description: "IoT AC remote controller — Phase 1 Flutter scaffold with simulated state and local alerts."
+description: "IoT AC remote controller \u2014 Phase 1 Flutter scaffold with simulated state and local alerts."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -38,6 +38,8 @@ dependencies:
   shared_preferences: ^2.5.5
   provider: ^6.1.5+1
   timezone: ^0.10.1
+  http: ^1.6.0
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:
