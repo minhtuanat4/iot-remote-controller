@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/ac_state.dart';
+import '../../domain/models/outdoor_weather.dart';
 import '../theme/app_theme.dart';
 import 'mode_icon_animated.dart';
 
-/// Modern animated LCD-style display for temp / mode / fan / timer.
+/// Modern animated LCD-style display for temp / mode / fan / timer / outdoor.
 class AcDisplay extends StatelessWidget {
-  const AcDisplay({super.key, required this.state});
+  const AcDisplay({
+    super.key,
+    required this.state,
+    this.outdoorWeather,
+    this.weatherStatus = WeatherStatus.idle,
+    this.showOutdoor = false,
+  });
 
   final AcState state;
+  final OutdoorWeather? outdoorWeather;
+  final WeatherStatus weatherStatus;
+  final bool showOutdoor;
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +120,7 @@ class AcDisplay extends StatelessWidget {
                     const Padding(
                       padding: EdgeInsets.only(top: 8),
                       child: Text(
-                        '°C',
+                        '\u00b0C',
                         style: TextStyle(
                           color: AppTheme.displayGlow,
                           fontSize: 20,
@@ -122,20 +132,71 @@ class AcDisplay extends StatelessWidget {
                 );
               },
             ),
+            if (showOutdoor) ...[
+              const SizedBox(height: 6),
+              _outdoorRow(),
+            ],
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _chip(Icons.air, 'Quạt: ${state.fan.labelVi}'),
+                _chip(Icons.air, 'Quat: ${state.fan.labelVi}'),
                 _chip(
                   Icons.power_settings_new,
-                  on ? 'BẬT' : 'TẮT',
+                  on ? 'BAT' : 'TAT',
                 ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _outdoorRow() {
+    late final String text;
+    late final IconData icon;
+    switch (weatherStatus) {
+      case WeatherStatus.loading:
+        icon = Icons.cloud_sync;
+        text = 'Ngoai troi: dang tai...';
+      case WeatherStatus.permissionDenied:
+      case WeatherStatus.networkError:
+      case WeatherStatus.unavailable:
+        final temp = outdoorWeather?.temperatureC;
+        icon = Icons.cloud_off;
+        text = temp == null
+            ? 'Ngoai troi: khong co du lieu'
+            : 'Ngoai troi: ${temp.toStringAsFixed(0)}\u00b0C (gia lap)';
+      case WeatherStatus.ready:
+        final w = outdoorWeather;
+        icon = Icons.wb_sunny_outlined;
+        if (w == null) {
+          text = 'Ngoai troi: -';
+        } else {
+          final hum = w.humidityPercent != null
+              ? ' - ${w.humidityPercent!.round()}%'
+              : '';
+          text = 'Ngoai troi: ${w.temperatureC.toStringAsFixed(1)}\u00b0C$hum';
+        }
+      case WeatherStatus.idle:
+        icon = Icons.cloud_outlined;
+        text = 'Ngoai troi: -';
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 14, color: Colors.white60),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            style: const TextStyle(color: Colors.white60, fontSize: 12),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
