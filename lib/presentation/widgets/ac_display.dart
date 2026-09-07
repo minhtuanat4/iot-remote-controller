@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/ac_state.dart';
+import '../../domain/models/outdoor_weather.dart';
 import '../theme/app_theme.dart';
 import 'mode_icon_animated.dart';
 
-/// Modern animated LCD-style display for temp / mode / fan / timer.
+/// Modern animated LCD-style display for temp / mode / fan / timer / outdoor.
 class AcDisplay extends StatelessWidget {
-  const AcDisplay({super.key, required this.state});
+  const AcDisplay({
+    super.key,
+    required this.state,
+    this.outdoorWeather,
+    this.weatherStatus = WeatherStatus.idle,
+    this.showOutdoor = false,
+  });
 
   final AcState state;
+  final OutdoorWeather? outdoorWeather;
+  final WeatherStatus weatherStatus;
+  final bool showOutdoor;
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +120,7 @@ class AcDisplay extends StatelessWidget {
                     const Padding(
                       padding: EdgeInsets.only(top: 8),
                       child: Text(
-                        '°C',
+                        '\u00b0C',
                         style: TextStyle(
                           color: AppTheme.displayGlow,
                           fontSize: 20,
@@ -122,6 +132,10 @@ class AcDisplay extends StatelessWidget {
                 );
               },
             ),
+            if (showOutdoor) ...[
+              const SizedBox(height: 6),
+              _outdoorRow(),
+            ],
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -136,6 +150,53 @@ class AcDisplay extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _outdoorRow() {
+    late final String text;
+    late final IconData icon;
+    switch (weatherStatus) {
+      case WeatherStatus.loading:
+        icon = Icons.cloud_sync;
+        text = 'Ngoài trời: đang tải...';
+      case WeatherStatus.permissionDenied:
+      case WeatherStatus.networkError:
+      case WeatherStatus.unavailable:
+        final temp = outdoorWeather?.temperatureC;
+        icon = Icons.cloud_off;
+        text = temp == null
+            ? 'Ngoài trời: không có dữ liệu'
+            : 'Ngoài trời: ${temp.toStringAsFixed(0)}°C (giả lập)';
+      case WeatherStatus.ready:
+        final w = outdoorWeather;
+        icon = Icons.wb_sunny_outlined;
+        if (w == null) {
+          text = 'Ngoài trời: —';
+        } else {
+          final hum = w.humidityPercent != null
+              ? ' - ${w.humidityPercent!.round()}%'
+              : '';
+          text = 'Ngoài trời: ${w.temperatureC.toStringAsFixed(1)}°C$hum';
+        }
+      case WeatherStatus.idle:
+        icon = Icons.cloud_outlined;
+        text = 'Ngoài trời: —';
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 14, color: Colors.white60),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            style: const TextStyle(color: Colors.white60, fontSize: 12),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
