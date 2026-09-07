@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/ac_model_registry.dart';
 import '../app_state.dart';
+import '../widgets/weather_settings_section.dart';
 
 /// Settings: AC model selection + local notification toggles.
 class SettingsScreen extends StatelessWidget {
@@ -14,14 +15,14 @@ class SettingsScreen extends StatelessWidget {
     final s = app.settings;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Cài đặt')),
+      appBar: AppBar(title: const Text('Cai dat')),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
-          const _SectionHeader('Mẫu máy lạnh'),
+          const _SectionHeader('Mau may lanh'),
           ...AcModelRegistry.models.map((m) {
             return RadioListTile<String>(
-              title: Text('${m.brandName} — ${m.modelName}'),
+              title: Text('${m.brandName} - ${m.modelName}'),
               subtitle: Text(m.descriptionVi),
               value: m.id,
               groupValue: app.selectedModel.id,
@@ -31,11 +32,11 @@ class SettingsScreen extends StatelessWidget {
             );
           }),
           const Divider(),
-          const _SectionHeader('Thông báo cục bộ'),
+          const _SectionHeader('Thong bao cuc bo'),
           SwitchListTile(
-            title: const Text('Máy lạnh bật quá lâu'),
+            title: const Text('May lanh bat qua lau'),
             subtitle: Text(
-              'Cảnh báo sau ${s.acOnTooLongMinutes} phút (giờ máy)',
+              'Canh bao sau ${s.acOnTooLongMinutes} phut (gio may)',
             ),
             value: s.acOnTooLongEnabled,
             onChanged: (v) => app.updateSettings(
@@ -44,7 +45,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           if (s.acOnTooLongEnabled)
             _MinutesSlider(
-              label: 'Ngưỡng (phút)',
+              label: 'Nguong (phut)',
               value: s.acOnTooLongMinutes.toDouble(),
               min: 30,
               max: 480,
@@ -54,43 +55,28 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           SwitchListTile(
-            title: const Text('Thời tiết ngoài trời vs setpoint'),
+            title: const Text('Thoi tiet ngoai troi vs setpoint'),
             subtitle: const Text(
-              'Stub — nhiệt độ ngoài trời giả lập (chưa gọi API)',
+              'Open-Meteo + GPS - canh bao khi ngoai troi < setpoint',
             ),
             value: s.weatherVsSetpointEnabled,
             onChanged: (v) => app.updateSettings(
               s.copyWith(weatherVsSetpointEnabled: v),
             ),
           ),
-          if (s.weatherVsSetpointEnabled)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  app.monitor.triggerWeatherStubAlert(app.acState.temperature);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Đã gửi thông báo stub thời tiết'),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.cloud),
-                label: const Text('Thử cảnh báo thời tiết'),
-              ),
-            ),
+          if (s.weatherVsSetpointEnabled) WeatherSettingsSection(app: app),
           SwitchListTile(
-            title: const Text('Cảnh báo hẹn giờ bật/tắt'),
-            subtitle: const Text('Thông báo khi bật hoặc tắt hẹn giờ'),
+            title: const Text('Canh bao hen gio bat/tat'),
+            subtitle: const Text('Thong bao khi bat hoac tat hen gio'),
             value: s.timerAlertsEnabled,
             onChanged: (v) => app.updateSettings(
               s.copyWith(timerAlertsEnabled: v),
             ),
           ),
           SwitchListTile(
-            title: const Text('Nhiệt độ thấp + quạt mạnh quá lâu'),
+            title: const Text('Nhiet do thap + quat manh qua lau'),
             subtitle: Text(
-              '≤${s.lowTempThreshold}°C + quạt mạnh ≥${s.lowTempHighFanMinutes} phút',
+              '<=${s.lowTempThreshold}C + quat manh >=${s.lowTempHighFanMinutes} phut',
             ),
             value: s.lowTempHighFanEnabled,
             onChanged: (v) => app.updateSettings(
@@ -99,7 +85,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           if (s.lowTempHighFanEnabled) ...[
             _MinutesSlider(
-              label: 'Ngưỡng thời gian (phút)',
+              label: 'Nguong thoi gian (phut)',
               value: s.lowTempHighFanMinutes.toDouble(),
               min: 15,
               max: 180,
@@ -109,7 +95,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             _MinutesSlider(
-              label: 'Ngưỡng nhiệt độ thấp (°C)',
+              label: 'Nguong nhiet do thap (C)',
               value: s.lowTempThreshold.toDouble(),
               min: 16,
               max: 24,
@@ -123,8 +109,9 @@ class SettingsScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Thời gian dùng theo đồng hồ thiết bị (local time). '
-              'Giai đoạn 1: trạng thái máy lạnh được mô phỏng.',
+              'Thoi gian dung theo dong ho thiet bi (local time). '
+              'Giai doan 1: trang thai may lanh duoc mo phong. '
+              'Thoi tiet: Open-Meteo + GPS.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
