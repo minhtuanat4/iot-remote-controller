@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/ac_model_registry.dart';
+import '../../domain/models/ac_transport_kind.dart';
 import '../app_state.dart';
 
-/// Settings: AC model selection + local notification toggles.
+/// Settings: transport + AC brand/protocol + local notification toggles.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -18,18 +19,68 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
-          const _SectionHeader('Mẫu máy lạnh'),
-          ...AcModelRegistry.models.map((m) {
-            return RadioListTile<String>(
-              title: Text('${m.brandName} — ${m.modelName}'),
-              subtitle: Text(m.descriptionVi),
-              value: m.id,
-              groupValue: app.selectedModel.id,
-              onChanged: (id) {
-                if (id != null) app.selectModel(id);
-              },
-            );
-          }),
+          const _SectionHeader('Kênh gửi lệnh'),
+          RadioGroup<AcTransportKind>(
+            groupValue: app.transport,
+            onChanged: (v) {
+              if (v != null) app.selectTransport(v);
+            },
+            child: Column(
+              children: [
+                for (final k in AcTransportKind.values)
+                  RadioListTile<AcTransportKind>(
+                    title: Text(k.labelVi),
+                    subtitle: Text(k.descriptionVi),
+                    value: k,
+                  ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text(
+              app.transport == AcTransportKind.irBlaster
+                  ? 'Bộ phát hiện tại: ${app.irTransmitter.labelVi}'
+                      '${app.irTransmitter.isHardware ? '' : ' — chưa gắn phần cứng'}'
+                  : 'Không phát IR; chỉ cập nhật giao diện.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          if (app.transport == AcTransportKind.irBlaster &&
+              app.lastIrFrame != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Text(
+                'Khung IR gần nhất: ${app.lastIrFrame!.protocolId} · '
+                '${app.lastIrFrame!.timingsUs.length} xung · '
+                'payload ${app.lastIrFrame!.payloadHex.length ~/ 2} byte',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontFamily: 'monospace',
+                    ),
+              ),
+            ),
+          const Divider(),
+          const _SectionHeader('Hãng / giao thức IR'),
+          RadioGroup<String>(
+            groupValue: app.selectedModel.id,
+            onChanged: (id) {
+              if (id != null) app.selectModel(id);
+            },
+            child: Column(
+              children: [
+                for (final m in AcModelRegistry.models)
+                  RadioListTile<String>(
+                    title: Text(m.pickerLabelVi),
+                    subtitle: Text(
+                      '${m.descriptionVi}\n'
+                      '${m.supportsIr ? 'IR: ${m.protocolId}' : 'Chỉ mô phỏng'}',
+                    ),
+                    isThreeLine: true,
+                    value: m.id,
+                  ),
+              ],
+            ),
+          ),
           const Divider(),
           const _SectionHeader('Thông báo cục bộ'),
           SwitchListTile(
@@ -124,7 +175,7 @@ class SettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Text(
               'Thời gian dùng theo đồng hồ thiết bị (local time). '
-              'Giai đoạn 1: trạng thái máy lạnh được mô phỏng.',
+              'IR Blaster hiện ghi log khung xung; bước tiếp: Broadlink / ESP.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
