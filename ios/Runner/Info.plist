@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Ung dung can vi tri de lay nhiet do ngoai troi tu Open-Meteo va so sanh voi setpoint may lanh.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Ung dung chi dung vi tri khi tinh nang thoi tiet ngoai troi duoc bat.</string>
 </dict>
 </plist>
