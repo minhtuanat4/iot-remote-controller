@@ -3,8 +3,10 @@ import 'dart:async';
 import '../../domain/models/ac_state.dart';
 import '../../domain/models/fan_speed.dart';
 import '../../domain/models/notification_settings.dart';
+import '../../domain/models/outdoor_weather.dart';
 import '../../domain/services/ac_controller.dart';
 import 'local_notification_service.dart';
+import 'weather_service.dart';
 
 /// Watches AC state and fires local notifications based on settings.
 /// All timestamps use device local time ([DateTime.now]).
@@ -25,13 +27,28 @@ class AlertMonitorService {
   DateTime? _lowTempHighFanSince;
   bool _acOnTooLongFired = false;
   bool _lowTempHighFanFired = false;
+  bool _weatherVsSetpointFired = false;
   int _lastTimerMinutes = 0;
 
-  /// Simulated outdoor temperature (°C) for weather-vs-setpoint stub.
-  static const double simulatedOutdoorTemp = 34.0;
+  OutdoorWeather? _outdoorWeather;
+
+  /// Simulated outdoor temperature (°C) fallback when live weather is missing.
+  static const double simulatedOutdoorTemp =
+      WeatherService.simulatedOutdoorTempC;
 
   void updateSettings(NotificationSettings settings) {
     _settings = settings;
+    if (!settings.weatherVsSetpointEnabled) {
+      _weatherVsSetpointFired = false;
+    }
+  }
+
+  /// Supplies the latest outdoor reading used by weather-vs-setpoint alerts.
+  void updateOutdoorWeather(OutdoorWeather? weather) {
+    if (weather?.temperatureC != _outdoorWeather?.temperatureC) {
+      _weatherVsSetpointFired = false;
+    }
+    _outdoorWeather = weather;
   }
 
   void start() {
@@ -49,7 +66,6 @@ class AlertMonitorService {
   }
 
   void _onState(AcState state) {
-    // Timer on/off alerts (device local time in message).
     if (_settings.timerAlertsEnabled &&
         state.timerMinutes != _lastTimerMinutes) {
       final now = DateTime.now();
@@ -58,15 +74,15 @@ class AlertMonitorService {
       if (state.timerMinutes > 0 && _lastTimerMinutes == 0) {
         _notifications.show(
           id: 100,
-          title: 'Hẹn giờ bật',
+          title: 'Hen gio bat',
           body:
-              'Đã đặt hẹn giờ ${state.timerMinutes} phút (lúc $timeStr giờ máy).',
+              'Da dat hen gio ${state.timerMinutes} phut (luc $timeStr gio may).',
         );
       } else if (state.timerMinutes == 0 && _lastTimerMinutes > 0) {
         _notifications.show(
           id: 101,
-          title: 'Hẹn giờ tắt',
-          body: 'Đã tắt hẹn giờ (lúc $timeStr giờ máy).',
+          title: 'Hen gio tat',
+          body: 'Da tat hen gio (luc $timeStr gio may).',
         );
       }
       _lastTimerMinutes = state.timerMinutes;
@@ -76,6 +92,7 @@ class AlertMonitorService {
       _acOnTooLongFired = false;
       _lowTempHighFanSince = null;
       _lowTempHighFanFired = false;
+      _weatherVsSetpointFired = false;
     }
 
     _evaluate(state);
@@ -86,7 +103,6 @@ class AlertMonitorService {
 
     final now = DateTime.now();
 
-    // AC on too long
     if (_settings.acOnTooLongEnabled &&
         state.powerOnSince != null &&
         !_acOnTooLongFired) {
@@ -95,14 +111,13 @@ class AlertMonitorService {
         _acOnTooLongFired = true;
         _notifications.show(
           id: 200,
-          title: 'Máy lạnh bật quá lâu',
+          title: 'May lanh bat qua lau',
           body:
-              'Đã bật hơn ${_settings.acOnTooLongMinutes} phút. Cân nhắc tắt để tiết kiệm điện.',
+              'Da bat hon ${_settings.acOnTooLongMinutes} phut. Can nhac tat de tiet kiem dien.',
         );
       }
     }
 
-    // Low temp + high fan too long
     final isLowTempHighFan = state.temperature <= _settings.lowTempThreshold &&
         state.fan == FanSpeed.high;
     if (_settings.lowTempHighFanEnabled) {
@@ -114,9 +129,9 @@ class AlertMonitorService {
             _lowTempHighFanFired = true;
             _notifications.show(
               id: 300,
-              title: 'Nhiệt độ thấp + quạt mạnh',
+              title: 'Nhiet do thap + quat manh',
               body:
-                  'Đã duy trì ≥${_settings.lowTempHighFanMinutes} phút. Có thể gây khó chịu hoặc tốn điện.',
+                  'Da duy tri >=${_settings.lowTempHighFanMinutes} phut. Co the gay kho chiu hoac ton dien.',
             );
           }
         }
@@ -126,25 +141,36 @@ class AlertMonitorService {
       }
     }
 
-    // Weather outdoor vs setpoint stub
-    if (_settings.weatherVsSetpointEnabled) {
-      final gap = simulatedOutdoorTemp - state.temperature;
-      if (gap >= 12) {
-        // Soft stub notification once per evaluate cycle is noisy;
-        // only tip when power just on — handled lightly via id 400 coalesce.
-        // Phase 1: no spam; exposed as toggle for future weather API.
+    if (_settings.weatherVsSetpointEnabled && !_weatherVsSetpointFired) {
+      final outdoor = _outdoorWeather?.temperatureC ?? simulatedOutdoorTemp;
+      if (outdoor < state.temperature) {
+        _weatherVsSetpointFired = true;
+        final source = (_outdoorWeather?.isSimulated ?? true)
+            ? 'gia lap'
+            : 'Open-Meteo';
+        _notifications.show(
+          id: 400,
+          title: 'Ngoai troi mat hon setpoint',
+          body:
+              'Ngoai troi ${outdoor.toStringAsFixed(1)}C < setpoint ${state.temperature}C ($source). Can nhac tat may lanh.',
+        );
       }
     }
   }
 
-  /// Manual stub trigger for weather alert (settings screen test).
-  Future<void> triggerWeatherStubAlert(int setpoint) async {
+  Future<void> triggerWeatherAlert(int setpoint) async {
     if (!_settings.weatherVsSetpointEnabled) return;
+    final outdoor = _outdoorWeather?.temperatureC ?? simulatedOutdoorTemp;
+    final source =
+        (_outdoorWeather?.isSimulated ?? true) ? 'gia lap' : 'Open-Meteo';
     await _notifications.show(
       id: 400,
-      title: 'Thời tiết ngoài trời',
+      title: 'Thoi tiet ngoai troi',
       body:
-          'Ngoài trời ~${simulatedOutdoorTemp.toStringAsFixed(0)}°C, setpoint $setpoint°C (stub — chưa gọi API thời tiết).',
+          'Ngoai troi ${outdoor.toStringAsFixed(1)}C, setpoint $setpoint\u00b0C ($source).',
     );
   }
+
+  Future<void> triggerWeatherStubAlert(int setpoint) =>
+      triggerWeatherAlert(setpoint);
 }
