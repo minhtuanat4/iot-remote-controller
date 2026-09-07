@@ -1,39 +1,40 @@
-# IoT Remote Controller (Điều khiển máy lạnh)
+# IoT Remote Controller (Dieu khien may lanh)
 
-Flutter Phase 1 scaffold: giao diện remote vật lý mô phỏng, trạng thái AC giả lập, registry mẫu máy, và cài đặt thông báo cục bộ.
+Flutter Phase 1 scaffold: giao dien remote vat ly mo phong, trang thai AC gia lap, registry mau may, thong bao cuc bo, va **thoi tiet ngoai troi that** qua Open-Meteo + GPS.
 
-## Yêu cầu
+## Yeu cau
 
-- Flutter SDK (stable) ≥ 3.35
-- Android Studio / Xcode (tùy nền tảng chạy)
+- Flutter SDK (stable) >= 3.35
+- Android Studio / Xcode (tuy nen tang chay)
 
-## Chạy ứng dụng
+## Chay ung dung
 
 ```bash
 flutter pub get
 flutter run
 ```
 
-Chạy trên Chrome (web):
+Chay tren Chrome (web):
 
 ```bash
 flutter run -d chrome
 ```
 
-Phân tích tĩnh:
+Phan tich tinh / test:
 
 ```bash
 flutter analyze
+flutter test
 ```
 
-## Cấu trúc thư mục
+## Cau truc thu muc
 
 ```
 lib/
   main.dart
   presentation/          # UI
     screens/             # Remote + Settings
-    widgets/             # Nút 3D, display, icon chế độ
+    widgets/             # Nut 3D, display, icon che do
     theme/
     app_state.dart
   domain/                # Models & contracts
@@ -42,30 +43,53 @@ lib/
   data/                  # Implementations
     models/              # AC model registry stubs
     repositories/        # Simulated AC controller
-    services/            # Local notifications + alert monitor
+    services/            # Notifications, alert monitor, weather, location
 ```
 
-## Phase 1 — đã có
+## Thoi tiet ngoai troi (Open-Meteo)
 
-- Remote UI dọc, nút nổi 3D có animation nhấn
-- Display animated: nhiệt độ / chế độ / quạt / hẹn giờ
-- Icon chế độ có chuyển động theo mode
-- State mô phỏng: nguồn, nhiệt độ, mode, fan, timer
-- Registry mẫu máy: Generic + Daikin stub + Panasonic stub
-- Cài đặt thông báo (`flutter_local_notifications`):
-  - Máy lạnh bật quá lâu (cấu hình phút)
-  - Thời tiết ngoài trời vs setpoint (stub)
-  - Cảnh báo hẹn giờ bật/tắt
-  - Nhiệt độ thấp + quạt mạnh quá lâu (cấu hình)
-- Nhãn giao diện tiếng Việt; mã/comment tiếng Anh
-- Thời gian theo đồng hồ thiết bị (local time)
+- API mien phi, **khong can API key**: `https://api.open-meteo.com/v1/forecast`
+- Lay `temperature_2m` va `relative_humidity_2m` theo lat/lon tu GPS thiet bi
+- Bat trong **Cai dat -> Thoi tiet ngoai troi vs setpoint**
+- Khi bat: xin quyen vi tri, tai thoi tiet, hien thi tren remote display
+- Canh bao cuc bo khi **ngoai troi < setpoint** (va may dang bat)
+- Lam moi: keo xuong (pull-to-refresh), nut tren AppBar / Cai dat, hoac dinh ky ~15 phut
+- Fallback gia lap `34C` khi tu choi quyen / tat GPS / mat mang
 
-## Chưa có (các phase sau)
+### Quyen nen tang
 
-- Gửi lệnh IR / MQTT / cloud API thật
-- API thời tiết thật
-- Background isolate / WorkManager scheduling bền vững
-- Pairing thiết bị IoT
+**Android** (`android/app/src/main/AndroidManifest.xml`):
+
+- `INTERNET`
+- `ACCESS_COARSE_LOCATION`
+- `ACCESS_FINE_LOCATION`
+- `POST_NOTIFICATIONS` (da co)
+
+**iOS** (`ios/Runner/Info.plist`):
+
+- `NSLocationWhenInUseUsageDescription`
+- `NSLocationAlwaysAndWhenInUseUsageDescription` (mo ta; app chi dung when-in-use)
+
+## Phase 1 - da co
+
+- Remote UI doc, nut noi 3D co animation nhan
+- Display animated: nhiet do / che do / quat / hen gio / ngoai troi
+- Icon che do co chuyen dong theo mode
+- State mo phong: nguon, nhiet do, mode, fan, timer
+- Registry mau may: Generic + Daikin stub + Panasonic stub
+- Cai dat thong bao (`flutter_local_notifications`):
+  - May lanh bat qua lau (cau hinh phut)
+  - Thoi tiet ngoai troi vs setpoint (Open-Meteo + GPS)
+  - Canh bao hen gio bat/tat
+  - Nhiet do thap + quat manh qua lau (cau hinh)
+- Nhan giao dien tieng Viet; ma/comment tieng Anh
+- Thoi gian theo dong ho thiet bi (local time)
+
+## Chua co (cac phase sau)
+
+- Gui lenh IR / MQTT / cloud API that
+- Background isolate / WorkManager scheduling ben vung
+- Pairing thiet bi IoT
 
 ## Package
 
