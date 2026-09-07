@@ -14,7 +14,7 @@ class NotificationSettings {
   final bool acOnTooLongEnabled;
   final int acOnTooLongMinutes;
 
-  /// Stub: outdoor weather vs setpoint mismatch (simulated outdoor temp).
+  /// Alert when outdoor temp (Open-Meteo/GPS) is below AC setpoint.
   final bool weatherVsSetpointEnabled;
 
   /// Alert when timer turns on/off.
