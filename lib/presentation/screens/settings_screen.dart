@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/ac_model_registry.dart';
 import '../../domain/models/ac_transport_kind.dart';
 import '../app_state.dart';
+import '../widgets/weather_settings_section.dart';
 
 /// Settings: transport + AC brand/protocol + local notification toggles.
 class SettingsScreen extends StatelessWidget {
@@ -107,29 +108,14 @@ class SettingsScreen extends StatelessWidget {
           SwitchListTile(
             title: const Text('Thời tiết ngoài trời vs setpoint'),
             subtitle: const Text(
-              'Stub — nhiệt độ ngoài trời giả lập (chưa gọi API)',
+              'Open-Meteo + GPS — cảnh báo khi ngoài trời < setpoint',
             ),
             value: s.weatherVsSetpointEnabled,
             onChanged: (v) => app.updateSettings(
               s.copyWith(weatherVsSetpointEnabled: v),
             ),
           ),
-          if (s.weatherVsSetpointEnabled)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  app.monitor.triggerWeatherStubAlert(app.acState.temperature);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Đã gửi thông báo stub thời tiết'),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.cloud),
-                label: const Text('Thử cảnh báo thời tiết'),
-              ),
-            ),
+          if (s.weatherVsSetpointEnabled) WeatherSettingsSection(app: app),
           SwitchListTile(
             title: const Text('Cảnh báo hẹn giờ bật/tắt'),
             subtitle: const Text('Thông báo khi bật hoặc tắt hẹn giờ'),
