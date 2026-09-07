@@ -60,6 +60,7 @@ class RemoteScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
+                // Brand label
                 Padding(
                   padding: const EdgeInsets.only(top: 8, bottom: 4),
                   child: Text(
@@ -74,6 +75,7 @@ class RemoteScreen extends StatelessWidget {
                 ),
                 AcDisplay(state: state),
                 const SizedBox(height: 8),
+                // Power
                 RaisedRemoteButton(
                   onPressed: () => ctrl.togglePower(),
                   icon: Icons.power_settings_new,
@@ -82,6 +84,7 @@ class RemoteScreen extends StatelessWidget {
                   size: 64,
                 ),
                 const SizedBox(height: 22),
+                // Temp up / down
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -100,6 +103,7 @@ class RemoteScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 22),
+                // Mode / Fan / Timer
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -128,7 +132,7 @@ class RemoteScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Mô phỏng · ${app.selectedModel.modelName}',
+                  '${app.transportStatusVi} · ${app.selectedModel.pickerLabelVi}',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.3),
                     fontSize: 10,
