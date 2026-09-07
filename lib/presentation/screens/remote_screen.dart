@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../domain/models/outdoor_weather.dart';
 import '../app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ac_display.dart';
@@ -16,11 +17,26 @@ class RemoteScreen extends StatelessWidget {
     final app = context.watch<AppState>();
     final state = app.acState;
     final ctrl = app.controller;
+    final weatherEnabled = app.settings.weatherVsSetpointEnabled;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Điều khiển máy lạnh'),
         actions: [
+          if (weatherEnabled)
+            IconButton(
+              tooltip: 'Làm mới thời tiết',
+              icon: app.weatherStatus == WeatherStatus.loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cloud_sync),
+              onPressed: app.weatherStatus == WeatherStatus.loading
+                  ? null
+                  : () => app.refreshOutdoorWeather(requestPermission: true),
+            ),
           IconButton(
             tooltip: 'Cài đặt',
             icon: const Icon(Icons.settings),
@@ -32,9 +48,16 @@ class RemoteScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          if (weatherEnabled) {
+            await app.refreshOutdoorWeather(requestPermission: true);
+          }
+        },
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(vertical: 16),
           child: Container(
             width: 300,
             padding: const EdgeInsets.only(top: 8, bottom: 28),
@@ -73,7 +96,12 @@ class RemoteScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                AcDisplay(state: state),
+                AcDisplay(
+                  state: state,
+                  outdoorWeather: app.outdoorWeather,
+                  weatherStatus: app.weatherStatus,
+                  showOutdoor: weatherEnabled,
+                ),
                 const SizedBox(height: 8),
                 // Power
                 RaisedRemoteButton(
@@ -142,6 +170,7 @@ class RemoteScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

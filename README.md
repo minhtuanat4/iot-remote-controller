@@ -1,6 +1,6 @@
 # IoT Remote Controller (Điều khiển máy lạnh)
 
-Flutter app: giao diện remote vật lý mô phỏng, trạng thái AC, registry hãng Việt Nam, thông báo cục bộ, và lớp **IR Blaster** (mã hóa lệnh IR theo hãng).
+Flutter app: giao diện remote vật lý mô phỏng, trạng thái AC, registry hãng Việt Nam, thông báo cục bộ, **thời tiết ngoài trời (Open-Meteo + GPS)**, và lớp **IR Blaster** (mã hóa lệnh IR theo hãng).
 
 ## Yêu cầu
 
@@ -96,6 +96,23 @@ flutter test test/ir/ir_encoder_test.dart
 - **ESP8266 / ESP32 + IRremoteESP8266**: nhận payload hex hoặc raw µs qua MQTT/HTTP, `sendRaw`.
 - **Điện thoại có IR blaster**: Flutter platform channel / plugin phát carrier + pulse train.
 - Hook sẵn: implement `IrTransmitter` mới, inject vào `AppState` / registry — không đổi encoder.
+
+
+## Thời tiết ngoài trời (Open-Meteo)
+
+- API miễn phí, **không cần API key**: `https://api.open-meteo.com/v1/forecast`
+- Lấy `temperature_2m` và `relative_humidity_2m` theo lat/lon từ GPS thiết bị
+- Bật trong **Cài đặt → Thời tiết ngoài trời vs setpoint**
+- Khi bật: xin quyền vị trí, tải thời tiết, hiển thị trên remote display
+- Cảnh báo cục bộ khi **ngoài trời < setpoint** (và máy đang bật)
+- Làm mới: kéo xuống (pull-to-refresh), nút trên AppBar / Cài đặt, hoặc định kỳ ~15 phút
+- Fallback giả lập `34°C` khi từ chối quyền / tắt GPS / mất mạng
+
+### Quyền nền tảng (thời tiết)
+
+**Android**: `INTERNET`, `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, `POST_NOTIFICATIONS`
+
+**iOS**: `NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`
 
 ## Package
 
